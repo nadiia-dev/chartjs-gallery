@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Crosshair chart</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        font-family: sans-serif;
+        box-sizing: border-box;
+      }
+
+      .chartMenu {
+        width: 100%;
+        height: 40px;
+        background: #1a1a1a;
+        color: rgba(75, 192, 192, 1);
+      }
+
+      .chartMenu p {
+        padding: 10px;
+        font-size: 20px;
+      }
+
+      .chartCard {
+        width: 100%;
+        height: calc(100vh - 40px);
+        background: rgba(75, 192, 192, 0.2);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .chartBox {
+        width: 700px;
+        padding: 20px;
+        border-radius: 20px;
+        border: 3px solid rgba(75, 192, 192, 1);
+        background: white;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="chartMenu">
+      <p>Charts gallery</p>
+    </div>
+    <div class="chartCard">
+      <div class="chartBox">
+        <canvas id="myChart"></canvas>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+
+    <script>
+      const ctx = document.getElementById("myChart");
+
+      const data = {
+        labels: [
+          new Date("2022-06-01").setHours(0, 0, 0, 0),
+          new Date("2022-06-03").setHours(0, 0, 0, 0),
+          new Date("2022-06-03").setHours(0, 0, 0, 0),
+          new Date("2022-06-04").setHours(0, 0, 0, 0),
+          new Date("2022-06-05").setHours(0, 0, 0, 0),
+          new Date("2022-06-06").setHours(0, 0, 0, 0),
+        ],
+        datasets: [
+          {
+            label: "# of Votes",
+            data: [12, 19, 3, 5, 2, 13],
+            backgroundColor: [
+              "rgba(255, 99, 132, 0.5)",
+              "rgba(54, 162, 235, 0.5)",
+              "rgba(255, 206, 86, 0.5)",
+              "rgba(75, 192, 192, 0.5)",
+              "rgba(153, 102, 255, 0.5)",
+              "rgba(255, 159, 64, 0.5)",
+            ],
+            borderColor: [
+              "rgba(255, 99, 132, 0.5)",
+              "rgba(54, 162, 235, 0.5)",
+              "rgba(255, 206, 86, 0.5)",
+              "rgba(75, 192, 192, 0.5)",
+              "rgba(153, 102, 255, 0.5)",
+              "rgba(255, 159, 64, 0.5)",
+            ],
+            hitPoint: 0,
+            pointRadius: 0,
+          },
+        ],
+      };
+
+      const config = {
+        type: "line",
+        data: data,
+        options: {
+          layout: {
+            padding: {
+              left: 12,
+            },
+          },
+          plugins: {
+            tooltip: {
+              enabled: false,
+            },
+          },
+          scales: {
+            x: {
+              type: "time",
+              time: {
+                unit: "day",
+              },
+            },
+            y: {
+              beginAtZero: true,
+            },
+          },
+        },
+      };
+
+      function crosshair(chart, mousemove) {
+        chart.update("none");
+        const xCoord = mousemove.offsetX;
+        const yCoord = mousemove.offsetY;
+
+        const {
+          ctx,
+          data,
+          chartArea: { top, bottom, left, right, width, height },
+          scales: { x, y },
+        } = chart;
+
+        ctx.save();
+
+        ctx.strokeStyle = "rgba(102, 102, 102, 1)";
+        ctx.lineWidth = 2;
+
+        if (
+          xCoord >= left &&
+          xCoord <= right &&
+          yCoord >= top &&
+          yCoord <= bottom
+        ) {
+          line(left, yCoord, right, yCoord);
+          line(xCoord, top, xCoord, bottom);
+          function line(xStart, yStart, xEnd, yEnd) {
+            ctx.beginPath();
+            ctx.moveTo(xStart, yStart);
+            ctx.lineTo(xEnd, yEnd);
+            ctx.setLineDash([6, 6]);
+            ctx.stroke();
+            ctx.closePath();
+            ctx.restore();
+            ctx.setLineDash([]);
+          }
+
+          ctx.beginPath();
+          const label_height = 24;
+          ctx.fillStyle = "rgba(102, 102, 102, 1)";
+          ctx.fillRect(0, yCoord - label_height / 2, left, label_height);
+          ctx.restore();
+
+          const label_text = y.getValueForPixel(yCoord);
+          ctx.font = "bold 12px sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseLine = "middle";
+          ctx.fillStyle = "white";
+          ctx.fillText(label_text.toFixed(2), left / 2, yCoord);
+          ctx.restore();
+
+          const bottomLabel = new Date(
+            x.getValueForPixel(xCoord)
+          ).toLocaleString("en-US", {
+            day: "numeric",
+            month: "short",
+          });
+          const bottomLabelWidth = ctx.measureText(bottomLabel).width + 12;
+          ctx.beginPath();
+          ctx.fillStyle = "rgba(102, 102, 102, 1)";
+          ctx.fillRect(
+            xCoord - bottomLabelWidth / 2,
+            bottom,
+            bottomLabelWidth,
+            label_height
+          );
+          ctx.restore();
+
+          ctx.font = "bold 12px sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseLine = "middle";
+          ctx.fillStyle = "white";
+          ctx.fillText(bottomLabel, xCoord, bottom + label_height / 2);
+          ctx.restore();
+        }
+      }
+
+      const myChart = new Chart(ctx, config);
+      ctx.addEventListener("mousemove", (e) => {
+        crosshair(myChart, e);
+      });
+    </script>
+  </body>
+</html>
