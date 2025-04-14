@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Track behind the bar chart</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        font-family: sans-serif;
+        box-sizing: border-box;
+      }
+
+      .chartMenu {
+        width: 100%;
+        height: 40px;
+        background: #1a1a1a;
+        color: rgba(75, 192, 192, 1);
+      }
+
+      .chartMenu p {
+        padding: 10px;
+        font-size: 20px;
+      }
+
+      .chartCard {
+        width: 100%;
+        height: calc(100vh - 40px);
+        background: rgba(75, 192, 192, 0.2);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .chartBox {
+        width: 80%;
+        padding: 20px;
+        border-radius: 20px;
+        border: 3px solid rgba(75, 192, 192, 1);
+        background: white;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="chartMenu">
+      <p>Charts gallery</p>
+    </div>
+    <div class="chartCard">
+      <div class="chartBox">
+        <canvas id="myChart"></canvas>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+      const ctx = document.getElementById("myChart");
+
+      const data = {
+        labels: ["Red", "Blue", "Yellow", "Green", "Purple", "Orange"],
+        datasets: [
+          {
+            label: "# of Votes",
+            data: [12, 19, 3, 5, 2, 13],
+            backgroundColor: [
+              "rgba(255, 99, 132, 0.2)",
+              "rgba(54, 162, 235, 0.2)",
+              "rgba(255, 206, 86, 0.2)",
+              "rgba(75, 192, 192, 0.2)",
+              "rgba(153, 102, 255, 0.2)",
+              "rgba(255, 159, 64, 0.2)",
+            ],
+            borderColor: [
+              "rgba(255, 99, 132, 1)",
+              "rgba(54, 162, 235, 1)",
+              "rgba(255, 206, 86, 1)",
+              "rgba(75, 192, 192, 1)",
+              "rgba(153, 102, 255, 1)",
+              "rgba(255, 159, 64, 1)",
+            ],
+            borderWidth: 1,
+            barPercentage: 0.9,
+            categoryPercentage: 0.8,
+          },
+        ],
+      };
+
+      const verticalBg = {
+        id: "verticalBg",
+        beforeDatasetsDraw(chart, args, pluginsOptions) {
+          const {
+            ctx,
+            data,
+            chartArea: { top, bottom, left, right, width, height },
+            scales: { x, y },
+          } = chart;
+          ctx.save();
+
+          const barPercentage = data.datasets[0].barPercentage || 0.9;
+          const categoryPercentage = data.datasets[0].categoryPercentage || 0.8;
+
+          const numPoints = y.max - y.min + 1 || data.labels.length;
+
+          const barWidth =
+            (height / numPoints) * barPercentage * categoryPercentage;
+          ctx.save();
+
+          ctx.fillStyle = pluginsOptions.barBackground || "lightgray";
+
+          for (let i = y.min; i <= numPoints; i++) {
+            const yCoord = y.getPixelForValue(i);
+            ctx.fillRect(left, yCoord - barWidth / 2, width, barWidth);
+          }
+        },
+      };
+
+      const config = {
+        type: "bar",
+        data: data,
+        options: {
+          indexAxis: "y",
+          plugins: {
+            legend: { display: false },
+          },
+          scales: {
+            y: {
+              min: 1,
+              max: 4,
+              beginAtZero: true,
+            },
+          },
+          plugins: {
+            verticalBg: {
+              barBackground: "lightgray",
+            },
+          },
+        },
+        plugins: [verticalBg],
+      };
+
+      const myChart = new Chart(ctx, config);
+    </script>
+  </body>
+</html>
